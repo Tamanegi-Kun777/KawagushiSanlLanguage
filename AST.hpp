@@ -19,7 +19,13 @@ enum AstID
   VariableID,
   NumberID
 };
-
+// ファイルの、先頭あたりに、追加
+class PrototypeAST;
+class FunctionAST;
+class FunctionStmtAST;
+/*
+ *   ASTの基底クラス
+ */
 class BaseAST
 {
   AstID ID;
@@ -43,7 +49,9 @@ public:
   }
 };
 
-// 変数宣言
+/*
+ *   変数宣言を表すAST
+ */
 class VariableDeclAST : public BaseAST
 {
 public:
@@ -59,25 +67,32 @@ private:
 public:
   VariableDeclAST(const std::string &name) : BaseAST(VariableDeclID), Name(name){};
 
+  // VariableDeclASTなのでtrueを返す
   static inline bool classof(VariableDeclAST const*){return true;};
 
+  // 渡されたBaseASTクラスがVariableDeclASTか判定する
   static inline bool classof(BaseAST const* base){
     return base->getValueID() == VariableDeclID;
   };
 
   ~VariableDeclAST(){};
 
+  // 変数名を取得する
   std::string getName(){return Name;};
 
+  // 変数の宣言種別を設定する
   bool setDeclType(DeclType type){
     Type = type;
     return true;
   };
 
+  // 変数の宣言種別を取得する
   DeclType getType(){return Type;};
 };
 
-// 二項演算
+/*
+ *   二項演算を表すAST
+ */
 class BinaryExprAST : public BaseAST
 {
   std::string Op;
@@ -88,20 +103,27 @@ public:
 
   ~BinaryExprAST(){SAFE_DELETE(LHS); SAFE_DELETE(RHS);};
 
+  // BinaryExprASTなのでtrueを返す
   static inline bool classof(BinaryExprAST const*){return true;};
 
+  // 渡されたBaseASTがBinaryExprASTか判定する
   static inline bool classof(BaseAST const* base){
     return base->getValueID() == BinaryExprID;
   };
 
+  // 演算子を取得する
   std::string getOp(){return Op;};
 
+  // 左辺値を取得する
   BaseAST *getLHS(){return LHS;};
 
+  // 右辺値を取得する
   BaseAST *getRHS(){return RHS;};
 };
 
-// 関数
+/*
+ *  関数呼び出しを表すAST
+ */
 class CallExprAST : public BaseAST
 {
   std::string Callee;
@@ -113,14 +135,18 @@ public:
 
   ~CallExprAST();
 
+  // CallExprASTなのでtrueを返す
   static inline bool classof(CallExprAST const*){return true;};
 
+  // 渡されたBaseASTがCallExprASTなのか判定する
   static inline bool classof(BaseAST const* base){
     return base->getValueID() == CallExprID;
   };
 
+  // 呼び出す関数名を取得する
   std::string getCallee(){return Callee;};
 
+  // i番目の引数を取得する
   BaseAST *getArgs(int i){
     if(i<Args.size()){
       return Args.at(i);
@@ -130,8 +156,9 @@ public:
     }
   };
 };
-
-// ジャンプ、return
+/*
+ *  ジャンプ（ここではreturn）を表すAST
+ */
 class JumpStmtAST : public BaseAST
 {
   BaseAST *Expr;
@@ -150,7 +177,10 @@ public:
   BaseAST *getExpr(){return Expr;};
 };
 
-// 変数参照
+/*
+ *  変数参照を表すAST
+ */
+
 class VariableAST : public BaseAST
 {
   std::string Name;
@@ -160,14 +190,21 @@ public:
 
   ~VariableAST(){};
 
+  // VariableASTなのでtrueを返す
   static inline bool classof(VariableAST const*){return true;};
 
+  // 渡されたBAせASTがVariableASTなのか判定する
   static inline bool classof(BaseAST const* base){
     return base->getValueID() == VariableID;
   };
 
+  // 変数名を取得する
   std::string getName(){return Name;};
 };
+
+/*
+ *  整数を表すAST
+ */
 
 class NumberAST : public BaseAST
 {
@@ -178,16 +215,62 @@ public:
 
   ~NumberAST(){};
 
+  //NumberASTなのでtrueを返す
   static inline bool classof(NumberAST const*){return true;};
 
+  //渡されたBaseASTがNumberASTか判定する
   static inline bool classof(BaseAST const* base){
     return base->getValueID() == NumberID;
   };
 
+  //このASTは表現する値を取得する
   int getNumberValue(){return Val;};
 };
+/*
+ *  ソースコードを表すAST
+ */
+class TranslationUnitAST
+{
+  std::vector<PrototypeAST*> Prototypes;
+  std::vector<FunctionAST*> Functions;
 
-// 関数宣言
+public:
+  TranslationUnitAST(){};
+  ~TranslationUnitAST();
+
+  //モジュールにプロトタイプ宣言を追加する
+  bool addPrototype(PrototypeAST *proto);
+
+  //モジュールに関数を追加する
+  bool addFunction(FunctionAST *func);
+
+  //モジュールが空か判定する
+  bool empty();
+
+  //i番目のプロトタイプ宣言を取得する
+  PrototypeAST *getPrototype(int i){
+    if(i < Prototypes.size()){
+      return Prototypes.at(i);
+    }
+    else{
+      return NULL;
+    }
+  }
+
+  //i番目の関数を取得する
+  FunctionAST *getFunction(int i){
+    if(i < Functions.size()){
+      return Functions.at(i);
+    }
+    else{
+      return NULL;
+    }
+  }
+};
+
+/*
+ *  関数宣言を表すAST
+ */
 class PrototypeAST
 {
   std::string Name;
@@ -197,8 +280,10 @@ public:
   PrototypeAST(const std::string &name, const std::vector<std::string> &params)
     : Name(name), Params(params){};
 
+  //関数名を取得する
   std::string getName(){return Name;};
 
+  //i番目の引数名を取得する
   std::string getParamName(int i){
     if(i < Params.size()){
       return Params.at(i);
@@ -208,10 +293,36 @@ public:
     }
   }
   ;
+  //引数の数を取得する
   int getParamNum(){return Params.size();};
 };
 
-// 関数定義（ボディ）
+/*
+ *  関数定義を表すAST
+ */
+class FunctionAST
+{
+  PrototypeAST *Proto;
+  FunctionStmtAST *Body;
+
+public:
+  FunctionAST(PrototypeAST *proto, FunctionStmtAST * body) : Proto(proto), Body(body){};
+
+  ~FunctionAST();
+  //関数名を取得する
+  std::string getName(){return Proto->getName();};
+  
+  //この関数のプロトタイプ宣言を取得する
+  PrototypeAST *getPrototype(){return Proto;};
+  
+  //この関数のボディを取得する
+  FunctionStmtAST *getBody(){return Body;};
+};
+
+/*
+ *  関数定義（ボディ）を表すAST
+ */
+
 class FunctionStmtAST
 {
   std::vector<VariableDeclAST*> VariableDecls;
@@ -222,10 +333,13 @@ public:
 
   ~FunctionStmtAST();
 
+  //関数に変数を追加する
   bool addVariableDeclaration(VariableDeclAST *vdecl);
 
+  //関数にステートメントを追加する
   bool addStatement(BaseAST *stmt){StmtLists.push_back(stmt);return true;}
 
+  //i番目の変数を取得する
   VariableDeclAST *getVariableDecl(int i){
     if(i < VariableDecls.size()){
       return VariableDecls.at(i);
@@ -235,6 +349,7 @@ public:
     }
   };
 
+  //i番目のステートメントを取得する
   BaseAST *getStatement(int i){
     if(i < StmtLists.size()){
       return StmtLists.at(i);
@@ -243,59 +358,6 @@ public:
       return NULL;
     }
   };
-};
-
-// 関数定義
-class FunctionAST
-{
-  PrototypeAST *Proto;
-  FunctionStmtAST *Body;
-
-public:
-  FunctionAST(PrototypeAST *proto, FunctionStmtAST * body) : Proto(proto), Body(body){};
-
-  ~FunctionAST();
-
-  std::string getName(){return Proto->getName();};
-
-  PrototypeAST *getPrototype(){return Proto;};
-
-  FunctionStmtAST *getBody(){return Body;};
-};
-
-// ソースコード
-class TranslationUnitAST
-{
-  std::vector<PrototypeAST*> Prototypes;
-  std::vector<FunctionAST*> Functions;
-
-public:
-  TranslationUnitAST(){};
-  ~TranslationUnitAST();
-
-  bool addPrototype(PrototypeAST *proto);
-
-  bool addFunction(FunctionAST *func);
-
-  bool empty();
-
-  PrototypeAST *getPrototype(int i){
-    if(i < Prototypes.size()){
-      return Prototypes.at(i);
-    }
-    else{
-      return NULL;
-    }
-  }
-
-  FunctionAST *getFunction(int i){
-    if(i < Functions.size()){
-      return Functions.at(i);
-    }
-    else{
-      return NULL;
-    }
-  }
 };
 
 #endif
