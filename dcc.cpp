@@ -64,7 +64,7 @@ int main(int argc, char **argv){
   }
 
 
-int fd = open(opt.getOutputFileName().c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+int fd = open(opt.getOutputFileName().c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
   if(fd == -1){
     fprintf(stderr, "output file error\n");
     SAFE_DELETE(parser);

@@ -157,12 +157,24 @@ llvm::Value *CodeGen::generateIfStatement(IfStmtAST *if_stmt){
     return NULL;
   }
 
-  // then用と合流(merge)用のBasicBlockを作る
+  // else節があるか判定
+  bool has_else = (if_stmt->getElseStmt(0) != NULL);
+
+  // BasicBlockを作る（elseはある場合のみ）
   llvm::BasicBlock *then_bb = llvm::BasicBlock::Create(Context, "then", CurFunc);
+  llvm::BasicBlock *else_bb = NULL;
+  if(has_else){
+    else_bb = llvm::BasicBlock::Create(Context, "else", CurFunc);
+  }
   llvm::BasicBlock *merge_bb = llvm::BasicBlock::Create(Context, "merge", CurFunc);
 
-  // 条件で分岐: 真ならthen、偽ならmerge
-  Builder->CreateCondBr(cond_v, then_bb, merge_bb);
+  // 条件で分岐: 真ならthen、偽ならelse（無ければmerge）
+  if(has_else){
+    Builder->CreateCondBr(cond_v, then_bb, else_bb);
+  }
+  else{
+    Builder->CreateCondBr(cond_v, then_bb, merge_bb);
+  }
 
   // thenブロックに命令を積んでいく
   Builder->SetInsertPoint(then_bb);
@@ -170,13 +182,32 @@ llvm::Value *CodeGen::generateIfStatement(IfStmtAST *if_stmt){
   for(int i = 0; (stmt = if_stmt->getThenStmt(i)); i++){
     generateStatement(stmt);
   }
-  // thenブロックが既に終端(retなど)を持っていなければmergeへジャンプ
+  // thenブロックが終端を持っていなければmergeへジャンプ
   if(!Builder->GetInsertBlock()->getTerminator()){
     Builder->CreateBr(merge_bb);
   }
-  // 以降の命令は合流ブロックに積む
-  Builder->SetInsertPoint(merge_bb);
 
+  // elseブロック（elseがある場合のみ）
+  if(has_else){
+    Builder->SetInsertPoint(else_bb);
+    for(int i = 0; (stmt = if_stmt->getElseStmt(i)); i++){
+      generateStatement(stmt);
+    }
+    // elseブロックが終端を持っていなければmergeへジャンプ
+    if(!Builder->GetInsertBlock()->getTerminator()){
+      Builder->CreateBr(merge_bb);
+    }
+  }
+
+// mergeブロックに到達する経路があるか確認
+  if(llvm::pred_begin(merge_bb) == llvm::pred_end(merge_bb)){
+    // 誰も到達しない（then/elseが両方returnした）ならmergeは不要
+    merge_bb->eraseFromParent();
+  }
+  else{
+    // 到達する経路があるなら、以降の命令をmergeに積む
+    Builder->SetInsertPoint(merge_bb);
+  }
   return merge_bb;
 }
 llvm::Value *CodeGen::generateBinaryExprssion(BinaryExprAST *bin_expr){

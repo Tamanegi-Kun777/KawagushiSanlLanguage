@@ -258,7 +258,7 @@ FunctionStmtAST *Parser::visitFunctionStatement(PrototypeAST *proto){
   }
 
   // 最後のStatementがjump_statementであるか確認
-  if(!last_stmt || !llvm::isa<JumpStmtAST>(last_stmt)){
+  if(!last_stmt || (!llvm::isa<JumpStmtAST>(last_stmt) && !llvm::isa<IfStmtAST>(last_stmt))){
     SAFE_DELETE(func_stmt);
     Tokens->applyTokenIndex(bkup);
     return NULL;
