@@ -561,33 +561,43 @@ BaseAST *Parser::visitIfStatement(){
   // else節(省略可能)
   if(Tokens->getCurType() == TOK_ELSE){
     Tokens->getNextToken();
-
-    // "{"
-    if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "{"){
-      Tokens->getNextToken();
+    // else の後が if なら、入れ子のif文として扱う（else if）
+    if(Tokens->getCurType() == TOK_IF){
+      BaseAST *nested_if = visitIfStatement();
+      if(nested_if){
+        if_stmt->addElseStmt(nested_if);
+      }
+      else{
+        SAFE_DELETE(if_stmt);
+        Tokens->applyTokenIndex(bkup);
+        return NULL;
+      }
     }
     else{
-      SAFE_DELETE(if_stmt);
-      Tokens->applyTokenIndex(bkup);
-      return NULL;
-    }
-
-    // else節: statementの並び
-    while((stmt = visitStatement())){
-      if_stmt->addElseStmt(stmt);
-    }
-
-    // "}"
-    if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "}"){
-      Tokens->getNextToken();
-    }
-    else{
-      SAFE_DELETE(if_stmt);
-      Tokens->applyTokenIndex(bkup);
-      return NULL;
+      // "{"
+      if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "{"){
+        Tokens->getNextToken();
+      }
+      else{
+        SAFE_DELETE(if_stmt);
+        Tokens->applyTokenIndex(bkup);
+        return NULL;
+      }
+      // else節: statementの並び
+      while((stmt = visitStatement())){
+        if_stmt->addElseStmt(stmt);
+      }
+      // "}"
+      if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "}"){
+        Tokens->getNextToken();
+      }
+      else{
+        SAFE_DELETE(if_stmt);
+        Tokens->applyTokenIndex(bkup);
+        return NULL;
+      }
     }
   }
-
   return if_stmt;
 }
 BaseAST *Parser::visitStatement(){
