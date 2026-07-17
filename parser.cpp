@@ -908,13 +908,11 @@ BaseAST *Parser::visitWhileStatement(){
 BaseAST *Parser::visitForStatement(){
   DBG("[DEBUG] visitForStatement start, curType=%d, curStr=%s\n", Tokens->getCurType(), Tokens->getCurString().c_str());
   int bkup = Tokens->getCurIndex();
-
   // "for"
   if(Tokens->getCurType() != TOK_FOR){
     return NULL;
   }
   Tokens->getNextToken();
-
   // "("
   if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "("){
     Tokens->getNextToken();
@@ -923,14 +921,61 @@ BaseAST *Parser::visitForStatement(){
     Tokens->applyTokenIndex(bkup);
     return NULL;
   }
-
+  // range版: for(識別子 in range(数)){ ... }
+  if(Tokens->getCurType() == TOK_IDENTIFIER){
+    int range_bkup = Tokens->getCurIndex();
+    std::string loop_var = Tokens->getCurString();
+    Tokens->getNextToken();
+    if(Tokens->getCurType() == TOK_IDENTIFIER && Tokens->getCurString() == "in"){
+      Tokens->getNextToken();
+      if(Tokens->getCurType() == TOK_IDENTIFIER && Tokens->getCurString() == "range"){
+        Tokens->getNextToken();
+        if(!(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "(")){
+          Tokens->applyTokenIndex(bkup); return NULL;
+        }
+        Tokens->getNextToken();
+        int range_max = 0;
+        if(Tokens->getCurType() == TOK_DIGIT){
+          range_max = Tokens->getCurNumVal();
+          Tokens->getNextToken();
+        }
+        else{ Tokens->applyTokenIndex(bkup); return NULL; }
+        if(!(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ")")){
+          Tokens->applyTokenIndex(bkup); return NULL;
+        }
+        Tokens->getNextToken();
+        if(!(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ")")){
+          Tokens->applyTokenIndex(bkup); return NULL;
+        }
+        Tokens->getNextToken();
+        BaseAST *r_init = new BinaryExprAST("=", new VariableAST(loop_var), new NumberAST(0));
+        BaseAST *r_cond = new BinaryExprAST("<", new VariableAST(loop_var), new NumberAST(range_max));
+        BaseAST *r_update = new BinaryExprAST("=", new VariableAST(loop_var),
+                              new BinaryExprAST("+", new VariableAST(loop_var), new NumberAST(1)));
+        if(!(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "{")){
+          Tokens->applyTokenIndex(bkup); return NULL;
+        }
+        Tokens->getNextToken();
+        ForStmtAST *range_for = new ForStmtAST(r_init, r_cond, r_update);
+        BaseAST *rstmt;
+        while((rstmt = visitStatement())){
+          range_for->addBodyStmt(rstmt);
+        }
+        if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "}"){
+          Tokens->getNextToken();
+        }
+        else{ SAFE_DELETE(range_for); Tokens->applyTokenIndex(bkup); return NULL; }
+        return range_for;
+      }
+    }
+    Tokens->applyTokenIndex(range_bkup);
+  }
   // init（代入文）
   BaseAST *init = visitAssignmentExpression();
   if(!init){
     Tokens->applyTokenIndex(bkup);
     return NULL;
   }
-
   // ";"
   if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ";"){
     Tokens->getNextToken();
@@ -940,7 +985,6 @@ BaseAST *Parser::visitForStatement(){
     Tokens->applyTokenIndex(bkup);
     return NULL;
   }
-
   // cond（条件式）
   BaseAST *condition = visitAssignmentExpression();
   if(!condition){
@@ -948,7 +992,6 @@ BaseAST *Parser::visitForStatement(){
     Tokens->applyTokenIndex(bkup);
     return NULL;
   }
-
   // ";"
   if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ";"){
     Tokens->getNextToken();
@@ -959,7 +1002,6 @@ BaseAST *Parser::visitForStatement(){
     Tokens->applyTokenIndex(bkup);
     return NULL;
   }
-
   // update（代入文）
   BaseAST *update = visitAssignmentExpression();
   if(!update){
@@ -968,7 +1010,6 @@ BaseAST *Parser::visitForStatement(){
     Tokens->applyTokenIndex(bkup);
     return NULL;
   }
-
   // ")"
   if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ")"){
     Tokens->getNextToken();
@@ -980,7 +1021,6 @@ BaseAST *Parser::visitForStatement(){
     Tokens->applyTokenIndex(bkup);
     return NULL;
   }
-
   // "{"
   if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "{"){
     Tokens->getNextToken();
@@ -992,15 +1032,12 @@ BaseAST *Parser::visitForStatement(){
     Tokens->applyTokenIndex(bkup);
     return NULL;
   }
-
   ForStmtAST *for_stmt = new ForStmtAST(init, condition, update);
-
   // body: statementの並び
   BaseAST *stmt;
   while((stmt = visitStatement())){
     for_stmt->addBodyStmt(stmt);
   }
-
   // "}"
   if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "}"){
     Tokens->getNextToken();
@@ -1010,7 +1047,6 @@ BaseAST *Parser::visitForStatement(){
     Tokens->applyTokenIndex(bkup);
     return NULL;
   }
-
   return for_stmt;
 }
 BaseAST *Parser::visitStatement(){
