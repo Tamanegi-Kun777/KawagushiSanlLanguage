@@ -23,6 +23,7 @@ enum TokenType {
     TOK_USING, // USING
     TOK_STRING,
     TOK_ENUM,
+    TOK_MATCH,
     TOK_EOF // EOF
 };
 

@@ -86,6 +86,9 @@ TokenStream *LexicalAnalysis(std::string input_filename){
         else if(token_str == "enum"){
           next_token = new Token(token_str, TOK_ENUM, line_num);
         }
+        else if(token_str == "match"){
+          next_token = new Token(token_str, TOK_MATCH, line_num);
+        }
         else{
           next_token = new Token(token_str, TOK_IDENTIFIER, line_num);
         }
@@ -165,6 +168,12 @@ index--;
           if(index < length && cur_line.at(index) == '='){
             token_str += next_char;
             token_str += '=';
+            index++;
+            next_token = new Token(token_str, TOK_SYMBOL, line_num);
+          }
+          else if(next_char == '=' && index < length && cur_line.at(index) == '>'){
+            token_str += '=';
+            token_str += '>';
             index++;
             next_token = new Token(token_str, TOK_SYMBOL, line_num);
           }

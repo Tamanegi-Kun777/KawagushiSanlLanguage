@@ -1,0 +1,10 @@
+enum Color { Red, Green }
+int main(){
+  int c;
+  c = Red;
+  match c {
+    Red => return 1;
+    Green => return 2;
+  }
+  return 0;
+}
