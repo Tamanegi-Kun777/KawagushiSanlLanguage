@@ -432,6 +432,23 @@ BaseAST *Parser::visitAssignmentExpression(){
           return NULL;
         }
       }
+      // 次が "[" なら配列アクセスを左辺にする（a[3] = ...）
+      else if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
+        Tokens->getNextToken();
+        BaseAST *index = visitAssignmentExpression();
+        if(!index){
+          Tokens->applyTokenIndex(bkup);
+          return NULL;
+        }
+        if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "]"){
+          Tokens->getNextToken();
+          lhs = new ArrayAccessAST(lhs_name, index);
+        }
+        else{
+          Tokens->applyTokenIndex(bkup);
+          return NULL;
+        }
+      }
       else{
         lhs = new VariableAST(lhs_name);
       }
@@ -491,6 +508,23 @@ BaseAST *Parser::visitPrimaryExpression(){
     (std::find(VariableTable.begin(), VariableTable.end(), Tokens->getCurString()) != VariableTable.end())){
     std::string var_name = Tokens->getCurString();
     Tokens->getNextToken();
+    // 次が "[" なら配列アクセス（a[3]）
+    if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
+      Tokens->getNextToken();
+      BaseAST *index = visitAssignmentExpression();
+      if(!index){
+        Tokens->applyTokenIndex(bkup);
+        return NULL;
+      }
+      if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "]"){
+        Tokens->getNextToken();
+        return new ArrayAccessAST(var_name, index);
+      }
+      else{
+        Tokens->applyTokenIndex(bkup);
+        return NULL;
+      }
+    }
     // 次がドットならメンバアクセス（p.x）
     if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "."){
       Tokens->getNextToken();
@@ -1003,6 +1037,7 @@ BaseAST *Parser::visitStatement(){
 }
 
 VariableDeclAST *Parser::visitVariableDeclaration(){
+  int bkup = Tokens->getCurIndex();
   std::string name;
   std::string type_name;
 
@@ -1033,7 +1068,7 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
     return NULL;
   }
 
-  // 変数名
+// 変数名
   if(Tokens->getCurType() == TOK_IDENTIFIER){
     name = Tokens->getCurString();
     Tokens->getNextToken();
@@ -1043,10 +1078,35 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
     return NULL;
   }
 
+  // 配列宣言: 名前の後に "[サイズ]" があれば配列
+  int array_size = 0;
+  if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
+    Tokens->getNextToken();
+    if(Tokens->getCurType() == TOK_DIGIT){
+      array_size = Tokens->getCurNumVal();
+      Tokens->getNextToken();
+    }
+    else{
+      Tokens->applyTokenIndex(bkup);
+      return NULL;
+    }
+    if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "]"){
+      Tokens->getNextToken();
+    }
+    else{
+      Tokens->applyTokenIndex(bkup);
+      return NULL;
+    }
+  }
+
   // ";"
   if(Tokens->getCurString() == ";"){
     Tokens->getNextToken();
-    return new VariableDeclAST(name, type_name);
+    VariableDeclAST *vdecl = new VariableDeclAST(name, type_name);
+    if(array_size > 0){
+      vdecl->setArraySize(array_size);
+    }
+    return vdecl;
   }
   else{
     Tokens->ungetToken(2);

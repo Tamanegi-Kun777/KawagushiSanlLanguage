@@ -217,9 +217,17 @@ llvm::Value *CodeGen::generateFunctionStatement(FunctionStmtAST *func_stmt){
 }
 
 llvm::Value *CodeGen::generateVariableDeclaration(VariableDeclAST *vdecl){
-  llvm::Type *var_type = getLLVMType(vdecl->getTypeName());
+  llvm::Type *elem_type = getLLVMType(vdecl->getTypeName());
+  llvm::Type *var_type;
+  if(vdecl->getArraySize() > 0){
+    var_type = llvm::ArrayType::get(elem_type, vdecl->getArraySize());
+  }
+  else{
+    var_type = elem_type;
+  }
   llvm::AllocaInst *alloca = Builder->CreateAlloca(var_type, 0, vdecl->getName());
   VariableTypeTable[vdecl->getName()] = vdecl->getTypeName();
+
   if(vdecl->getType() == VariableDeclAST::param){
     llvm::ValueSymbolTable *vs_table = CurFunc->getValueSymbolTable();
     Builder->CreateStore(vs_table->lookup(vdecl->getName().append("_arg")), alloca);
@@ -424,6 +432,9 @@ llvm::Value *CodeGen::generateBinaryExprssion(BinaryExprAST *bin_expr){
     if(llvm::isa<MemberAccessAST>(lhs)){
       lhs_v = generateMemberAddress(llvm::dyn_cast<MemberAccessAST>(lhs));
     }
+    else if(llvm::isa<ArrayAccessAST>(lhs)){
+      lhs_v = generateArrayAddress(llvm::dyn_cast<ArrayAccessAST>(lhs));
+    }
     else{
       VariableAST *lhs_var = llvm::dyn_cast<VariableAST>(lhs);
       llvm::ValueSymbolTable *vs_table = CurFunc->getValueSymbolTable();
@@ -444,15 +455,15 @@ llvm::Value *CodeGen::generateBinaryExprssion(BinaryExprAST *bin_expr){
       NumberAST *num = llvm::dyn_cast<NumberAST>(lhs);
       lhs_v = generateNumber(num->getNumberValue());
     }
-    else if(llvm::isa<FloatNumberAST>(lhs)){
-      lhs_v = generateFloatNumber(llvm::dyn_cast<FloatNumberAST>(lhs)->getValue());
-    }
     else if(llvm::isa<MemberAccessAST>(lhs)){
       llvm::Value *addr = generateMemberAddress(llvm::dyn_cast<MemberAccessAST>(lhs));
       lhs_v = Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "member_tmp");
     }
+    else if(llvm::isa<ArrayAccessAST>(lhs)){
+      llvm::Value *addr = generateArrayAddress(llvm::dyn_cast<ArrayAccessAST>(lhs));
+      lhs_v = Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "array_tmp");
+    }
   }
-
   if(llvm::isa<BinaryExprAST>(rhs)){
     rhs_v = generateBinaryExprssion(llvm::dyn_cast<BinaryExprAST>(rhs));
   }
@@ -472,6 +483,10 @@ llvm::Value *CodeGen::generateBinaryExprssion(BinaryExprAST *bin_expr){
   else if(llvm::isa<MemberAccessAST>(rhs)){
     llvm::Value *addr = generateMemberAddress(llvm::dyn_cast<MemberAccessAST>(rhs));
     rhs_v = Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "member_tmp");
+  }
+  else if(llvm::isa<ArrayAccessAST>(rhs)){
+    llvm::Value *addr = generateArrayAddress(llvm::dyn_cast<ArrayAccessAST>(rhs));
+    rhs_v = Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "array_tmp");
   }
   // double が絡む演算のため型を揃える（代入以外で使う）
   bool is_float = (lhs_v && lhs_v->getType()->isDoubleTy()) || (rhs_v && rhs_v->getType()->isDoubleTy());
@@ -593,6 +608,10 @@ llvm::Value *CodeGen::generateJumpStatement(JumpStmtAST *jump_stmt){
     llvm::Value *addr = generateMemberAddress(llvm::dyn_cast<MemberAccessAST>(expr));
     ret_v = Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "member_tmp");
   }
+  else if(llvm::isa<ArrayAccessAST>(expr)){
+    llvm::Value *addr = generateArrayAddress(llvm::dyn_cast<ArrayAccessAST>(expr));
+    ret_v = Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "array_tmp");
+  }
   DBG("[CG] JumpStmt: exprType binary=%d var=%d num=%d, ret_v=%p\n",
           llvm::isa<BinaryExprAST>(expr), llvm::isa<VariableAST>(expr),
           llvm::isa<NumberAST>(expr), (void*)ret_v);
@@ -640,6 +659,31 @@ llvm::Value *CodeGen::generateMemberAddress(MemberAccessAST *member){
 
   // getelementptr で「p の member_index 番目のフィールド」のアドレスを計算
   return Builder->CreateStructGEP(struct_type, base_ptr, member_index, "member_ptr");
+}
+llvm::Value *CodeGen::generateArrayAddress(ArrayAccessAST *array){
+  // 配列変数のアドレス
+  llvm::ValueSymbolTable *vs_table = CurFunc->getValueSymbolTable();
+  llvm::Value *base_ptr = vs_table->lookup(array->getArrayName());
+  // 添字（式）を生成
+  BaseAST *index_ast = array->getIndex();
+  llvm::Value *index_v = NULL;
+  if(llvm::isa<NumberAST>(index_ast)){
+    index_v = generateNumber(llvm::dyn_cast<NumberAST>(index_ast)->getNumberValue());
+  }
+  else if(llvm::isa<VariableAST>(index_ast)){
+    index_v = generateVariable(llvm::dyn_cast<VariableAST>(index_ast));
+  }
+  else if(llvm::isa<BinaryExprAST>(index_ast)){
+    index_v = generateBinaryExprssion(llvm::dyn_cast<BinaryExprAST>(index_ast));
+  }
+  // 配列の要素型
+  llvm::Type *elem_type = getLLVMType(VariableTypeTable[array->getArrayName()]);
+  llvm::Type *array_type = llvm::ArrayType::get(elem_type, 0);
+  // getelementptr: [N x T]* の base_ptr から {0, index} で要素アドレス
+  std::vector<llvm::Value*> indices;
+  indices.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(Context), 0));
+  indices.push_back(index_v);
+  return Builder->CreateInBoundsGEP(base_ptr->getType()->getPointerElementType(), base_ptr, indices, "array_ptr");
 }
 llvm::Value *CodeGen::generateMethodCall(MemberAccessAST *member){
   llvm::ValueSymbolTable *vs_table = CurFunc->getValueSymbolTable();

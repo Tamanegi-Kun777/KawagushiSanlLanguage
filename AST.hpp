@@ -23,7 +23,8 @@ enum AstID
   WhileStmtID,
   ForStmtID,
   StructDeclID,
-  MemberAccessID
+  MemberAccessID,
+  ArrayAccessID
 };
 // ファイルの、先頭あたりに、追加
 class PrototypeAST;
@@ -70,9 +71,9 @@ private:
   std::string Name;
   std::string TypeName;
   DeclType Type;
-
+  int ArraySize;
 public:
-  VariableDeclAST(const std::string &name, const std::string &type_name = "int") : BaseAST(VariableDeclID), Name(name), TypeName(type_name){};
+  VariableDeclAST(const std::string &name, const std::string &type_name = "int") : BaseAST(VariableDeclID), Name(name), TypeName(type_name), ArraySize(0){};
 
   // VariableDeclASTなのでtrueを返す
   static inline bool classof(VariableDeclAST const*){return true;};
@@ -87,7 +88,8 @@ public:
   // 変数名を取得する
   std::string getName(){return Name;};
   std::string getTypeName(){return TypeName;};
-
+  int getArraySize(){return ArraySize;};
+  void setArraySize(int size){ArraySize = size;};
   // 変数の宣言種別を設定する
   bool setDeclType(DeclType type){
     Type = type;
@@ -319,6 +321,24 @@ public:
   std::string getVariableName(){return VariableName;};
   std::string getMemberName(){return MemberName;};
   bool getIsCall(){return IsCall;};
+};
+/*
+ *  配列要素アクセス(a[3])を表すAST
+ */
+class ArrayAccessAST : public BaseAST
+{
+  std::string ArrayName;
+  BaseAST *Index;
+public:
+  ArrayAccessAST(const std::string &name, BaseAST *index)
+    : BaseAST(ArrayAccessID), ArrayName(name), Index(index){};
+  ~ArrayAccessAST(){};
+  static inline bool classof(ArrayAccessAST const*){return true;};
+  static inline bool classof(BaseAST const* base){
+    return base->getValueID() == ArrayAccessID;
+  };
+  std::string getArrayName(){return ArrayName;};
+  BaseAST *getIndex(){return Index;};
 };
 /*
  *  変数参照を表すAST
