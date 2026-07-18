@@ -26,6 +26,19 @@ llvm::Module &CodeGen::getModule(){
 
 bool CodeGen::generateTranslationUnit(TranslationUnitAST &tunit, std::string name){
   Mod = new llvm::Module (name, Context);
+  // 外部関数を宣言: i8* malloc(i64)
+  std::vector<llvm::Type*> malloc_args;
+  malloc_args.push_back(llvm::Type::getInt64Ty(Context));
+  llvm::FunctionType *malloc_type = llvm::FunctionType::get(
+      llvm::Type::getInt8PtrTy(Context), malloc_args, false);
+  llvm::Function::Create(malloc_type, llvm::Function::ExternalLinkage, "malloc", Mod);
+
+  // 外部関数を宣言: void free(i8*)
+  std::vector<llvm::Type*> free_args;
+  free_args.push_back(llvm::Type::getInt8PtrTy(Context));
+  llvm::FunctionType *free_type = llvm::FunctionType::get(
+      llvm::Type::getVoidTy(Context), free_args, false);
+  llvm::Function::Create(free_type, llvm::Function::ExternalLinkage, "free", Mod);
   // 構造体定義を先に処理してLLVMのStructTypeを作る
   for(int i = 0; ; i++){
     StructDeclAST *sdecl = tunit.getStruct(i);

@@ -4,6 +4,9 @@
 
 Parser::Parser(std::string filename){
   Tokens = LexicalAnalysis(filename);
+  // 外部関数を登録
+  PrototypeTable["malloc"] = 1;
+  PrototypeTable["free"] = 1;
 };
 
 /*  構文解析実行
