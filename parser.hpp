@@ -28,6 +28,8 @@ private:
   std::map<std::string, int> EnumTable;
   std::vector<std::string> CurrentStructMembers;
   std::string CurrentStructName;
+  // データ付きenum: enum名 → バリアント（構造体名）のリスト
+  std::map<std::string, std::vector<std::string>> EnumVariants;
  
 public:
   Parser(std::string filename);

@@ -1,0 +1,6 @@
+class Circle { int radius; }
+class Rectangle { int width; int height; }
+enum Shape { Circle, Rectangle }
+int main(){
+  return 0;
+}

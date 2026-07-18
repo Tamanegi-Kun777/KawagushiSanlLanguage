@@ -224,8 +224,10 @@ bool Parser::visitEnumDeclaration(){
   }
   Tokens->getNextToken();
   // enum名（識別子）
+  std::string enum_name;
   if(Tokens->getCurType() == TOK_IDENTIFIER){
-    Tokens->getNextToken();   // enum名は使わないが読み飛ばす
+    enum_name = Tokens->getCurString();
+    Tokens->getNextToken();
   }
   else{
     Tokens->applyTokenIndex(bkup);
@@ -241,7 +243,11 @@ bool Parser::visitEnumDeclaration(){
   int value = 0;
   while(Tokens->getCurType() == TOK_IDENTIFIER){
     std::string member = Tokens->getCurString();
-    EnumTable[member] = value;   // 名前→番号
+    DBG("[DEBUG] enum member read: %s, in StructTable: %d\n", member.c_str(), (StructTable.find(member) != StructTable.end()));
+    if(StructTable.find(member) != StructTable.end()){
+      EnumVariants[enum_name].push_back(member);
+      DBG("[DEBUG] enum variant: %s -> %s (tag=%d)\n", enum_name.c_str(), member.c_str(), value);
+    }
     value++;
     Tokens->getNextToken();
     // カンマがあれば次へ
