@@ -25,7 +25,8 @@ enum AstID
   StructDeclID,
   MemberAccessID,
   ArrayAccessID,
-  StringLiteralID
+  StringLiteralID,
+  EnumValueID
 };
 // ファイルの、先頭あたりに、追加
 class PrototypeAST;
@@ -363,6 +364,31 @@ public:
     return base->getValueID() == StringLiteralID;
   };
   std::string getStr(){return Str;};
+};
+/*
+ *  enumバリアントの値 Circle{ 10 } を表すAST
+ */
+class EnumValueAST : public BaseAST
+{
+  std::string VariantName;
+  int Tag;
+  std::vector<BaseAST*> Values;
+public:
+  EnumValueAST(const std::string &variant_name, int tag)
+    : BaseAST(EnumValueID), VariantName(variant_name), Tag(tag){};
+  ~EnumValueAST(){};
+  static inline bool classof(EnumValueAST const*){return true;};
+  static inline bool classof(BaseAST const* base){
+    return base->getValueID() == EnumValueID;
+  };
+  std::string getVariantName(){return VariantName;};
+  int getTag(){return Tag;};
+  bool addValue(BaseAST *val){Values.push_back(val); return true;};
+  int getValueNum(){return Values.size();};
+  BaseAST *getValue(int i){
+    if(i < Values.size()){ return Values.at(i); }
+    else{ return NULL; }
+  };
 };
 /*
  *  変数参照を表すAST

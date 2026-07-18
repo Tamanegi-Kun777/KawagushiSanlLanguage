@@ -633,12 +633,53 @@ BaseAST *Parser::visitAssignmentExpression(){
 BaseAST *Parser::visitPrimaryExpression(){
   DBG("[DEBUG] visitPrimaryExpression start, curType=%d, curStr=%s\n", Tokens->getCurType(), Tokens->getCurString().c_str());//追加
   int bkup = Tokens->getCurIndex();
-  // enum の名前なら番号に置き換える
+  // データ付きenumバリアント: Circle{ ... }
   if(Tokens->getCurType() == TOK_IDENTIFIER &&
-     EnumTable.find(Tokens->getCurString()) != EnumTable.end()){
-    int value = EnumTable[Tokens->getCurString()];
+     EnumTable.find(Tokens->getCurString()) != EnumTable.end() &&
+     StructTable.find(Tokens->getCurString()) != StructTable.end()){
+    int ev_bkup = Tokens->getCurIndex();
+    std::string variant_name = Tokens->getCurString();
+    int tag = EnumTable[variant_name];
     Tokens->getNextToken();
-    return new NumberAST(value);
+    if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "{"){
+      Tokens->getNextToken();
+      EnumValueAST *ev = new EnumValueAST(variant_name, tag);
+      // 値を読む（メンバ名あり/なし両対応）
+      while(!(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "}")){
+        // 「識別子 :」ならメンバ名を読み飛ばす
+        int val_bkup = Tokens->getCurIndex();
+        if(Tokens->getCurType() == TOK_IDENTIFIER){
+          std::string maybe_name = Tokens->getCurString();
+          Tokens->getNextToken();
+          if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ":"){
+            Tokens->getNextToken();   // メンバ名 + : を読み飛ばした
+          }
+          else{
+            Tokens->applyTokenIndex(val_bkup);   // メンバ名でなかった、戻す
+          }
+        }
+        // 値（式）を読む
+        BaseAST *val = visitAssignmentExpression();
+        if(!val){ SAFE_DELETE(ev); Tokens->applyTokenIndex(ev_bkup); return NULL; }
+        ev->addValue(val);
+        // カンマがあれば次へ
+        if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ","){
+          Tokens->getNextToken();
+        }
+        else{
+          break;
+        }
+      }
+      // "}"
+      if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "}"){
+        Tokens->getNextToken();
+      }
+      else{ SAFE_DELETE(ev); Tokens->applyTokenIndex(ev_bkup); return NULL; }
+      return ev;
+    }
+    else{
+      Tokens->applyTokenIndex(ev_bkup);   // { が無い、バリアント値ではない
+    }
   }
   if(Tokens->getCurType() == TOK_IDENTIFIER &&
     (std::find(VariableTable.begin(), VariableTable.end(), Tokens->getCurString()) != VariableTable.end())){

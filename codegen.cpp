@@ -433,9 +433,11 @@ llvm::Value *CodeGen::generateBinaryExprssion(BinaryExprAST *bin_expr){
   llvm::Value *rhs_v = NULL;
 
   if(bin_expr->getOp() == "="){
-    // 右辺が文字列リテラルなら、配列に1文字ずつ展開
     if(llvm::isa<StringLiteralAST>(rhs)){
       return generateStringAssign(bin_expr);
+    }
+    if(llvm::isa<EnumValueAST>(rhs)){
+      return generateEnumValueAssign(bin_expr);
     }
     if(llvm::isa<MemberAccessAST>(lhs)){
       lhs_v = generateMemberAddress(llvm::dyn_cast<MemberAccessAST>(lhs));
@@ -726,4 +728,22 @@ llvm::Value *CodeGen::generateNumber(int value){
 }
 llvm::Value *CodeGen::generateFloatNumber(double value){
   return llvm::ConstantFP::get(llvm::Type::getDoubleTy(Context), value);
+}
+llvm::Value *CodeGen::generateEnumValueAssign(BinaryExprAST *bin_expr){
+  // 左辺 s のアドレス
+  VariableAST *lhs_var = llvm::dyn_cast<VariableAST>(bin_expr->getLHS());
+  llvm::ValueSymbolTable *vs_table = CurFunc->getValueSymbolTable();
+  llvm::Value *shape_ptr = vs_table->lookup(lhs_var->getName());
+  // 右辺 Circle{...}
+  EnumValueAST *ev = llvm::dyn_cast<EnumValueAST>(bin_expr->getRHS());
+  int tag = ev->getTag();
+  // s.tag（0番目のメンバ）のアドレス
+  llvm::Type *shape_type = shape_ptr->getType()->getPointerElementType();
+  std::vector<llvm::Value*> indices;
+  indices.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(Context), 0));
+  indices.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(Context), 0));
+  llvm::Value *tag_ptr = Builder->CreateInBoundsGEP(shape_type, shape_ptr, indices, "tag_ptr");
+  // タグを書き込む
+  llvm::Value *tag_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(Context), tag);
+  return Builder->CreateStore(tag_val, tag_ptr);
 }

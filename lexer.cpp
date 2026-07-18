@@ -188,19 +188,20 @@ index--;
           }
         }
         else if(next_char == '*' ||
-           next_char == '+' ||
-           next_char == '-' ||
-           next_char == ';' ||
-           next_char == ',' ||
-           next_char == '(' ||
-           next_char == ')' ||
-           next_char == '{' ||
-           next_char == '}' ||
-           next_char == '.' ||
-           next_char == '[' ||
-           next_char == ']' ){
-           token_str += next_char;
-           next_token = new Token(token_str, TOK_SYMBOL, line_num);
+          next_char == '+' ||
+          next_char == '-' ||
+          next_char == ';' ||
+          next_char == ',' ||
+          next_char == '(' ||
+          next_char == ')' ||
+          next_char == '{' ||
+          next_char == '}' ||
+          next_char == '.' ||
+          next_char == '[' ||
+          next_char == ']' || 
+          next_char == ':' ){
+          token_str += next_char;
+          next_token = new Token(token_str, TOK_SYMBOL, line_num);
         }
         else{
           fprintf(stderr, "unclear token : %c", next_char);

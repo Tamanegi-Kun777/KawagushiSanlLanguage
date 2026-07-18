@@ -66,6 +66,7 @@ private:
   llvm::Value *generateNumber(int value);
   llvm::Value *generateFloatNumber(double value);
   llvm::Value *generateStringAssign(BinaryExprAST *bin_expr);
+  llvm::Value *generateEnumValueAssign(BinaryExprAST *bin_expr);
 };
 
 #endif
