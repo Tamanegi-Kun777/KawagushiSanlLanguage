@@ -240,16 +240,46 @@ bool Parser::visitEnumDeclaration(){
   }
   Tokens->getNextToken();
   // メンバ（識別子）をカンマ区切りで読む
-  int value = 0;
+int value = 0;
   while(Tokens->getCurType() == TOK_IDENTIFIER){
     std::string member = Tokens->getCurString();
-    DBG("[DEBUG] enum member read: %s, in StructTable: %d\n", member.c_str(), (StructTable.find(member) != StructTable.end()));
-    if(StructTable.find(member) != StructTable.end()){
+    EnumTable[member] = value;   // 番号を振る（両方共通）
+    Tokens->getNextToken();
+    // 次が "{" なら、データ付きバリアント（案B）
+    if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "{"){
+      Tokens->getNextToken();
+      // このバリアントを構造体として作る
+      StructDeclAST *variant_decl = new StructDeclAST(member);
+      // メンバ（int/char/double 名前;）を読む
+      while(Tokens->getCurType() == TOK_INT || Tokens->getCurType() == TOK_CHAR || Tokens->getCurType() == TOK_DOUBLE){
+        std::string member_type;
+        if(Tokens->getCurType() == TOK_INT){ member_type = "int"; }
+        else if(Tokens->getCurType() == TOK_CHAR){ member_type = "char"; }
+        else{ member_type = "double"; }
+        Tokens->getNextToken();
+        std::string member_name;
+        if(Tokens->getCurType() == TOK_IDENTIFIER){
+          member_name = Tokens->getCurString();
+          Tokens->getNextToken();
+        }
+        else{ SAFE_DELETE(variant_decl); Tokens->applyTokenIndex(bkup); return false; }
+        if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ";"){
+          Tokens->getNextToken();
+        }
+        else{ SAFE_DELETE(variant_decl); Tokens->applyTokenIndex(bkup); return false; }
+        variant_decl->addMember(member_name, member_type);
+      }
+      // "}"（バリアントの閉じ）
+      if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "}"){
+        Tokens->getNextToken();
+      }
+      else{ SAFE_DELETE(variant_decl); Tokens->applyTokenIndex(bkup); return false; }
+      // 構造体として登録、バリアントとして記録
+      StructTable[member] = variant_decl;
       EnumVariants[enum_name].push_back(member);
-      DBG("[DEBUG] enum variant: %s -> %s (tag=%d)\n", enum_name.c_str(), member.c_str(), value);
+      DBG("[DEBUG] enum variant(B): %s -> %s (tag=%d)\n", enum_name.c_str(), member.c_str(), value);
     }
     value++;
-    Tokens->getNextToken();
     // カンマがあれば次へ
     if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ","){
       Tokens->getNextToken();
