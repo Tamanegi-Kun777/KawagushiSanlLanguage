@@ -1415,7 +1415,11 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
   else{
     return NULL;
   }
-
+// ポインタ: 型の後に * があれば型名に付ける
+  while(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "*"){
+    type_name = type_name + "*";
+    Tokens->getNextToken();
+  }
 // 変数名
   if(Tokens->getCurType() == TOK_IDENTIFIER){
     name = Tokens->getCurString();

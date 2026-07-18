@@ -100,6 +100,11 @@ void CodeGen::registerStruct(StructDeclAST *struct_decl){
 }
 
 llvm::Type *CodeGen::getLLVMType(const std::string &type_name){
+  // 末尾が * ならポインタ型
+  if(type_name.length() > 0 && type_name.at(type_name.length() - 1) == '*'){
+    std::string base = type_name.substr(0, type_name.length() - 1);
+    return getLLVMType(base)->getPointerTo();
+  }
   if(type_name == "int"){
     return llvm::Type::getInt32Ty(Context);
   }
