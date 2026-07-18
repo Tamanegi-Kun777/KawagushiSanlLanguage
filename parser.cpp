@@ -764,10 +764,24 @@ BaseAST *Parser::visitPrimaryExpression(){
     Tokens->getNextToken();
     return new FloatNumberAST(val);
   }
-  else if(Tokens->getCurType() == TOK_STRING){
+else if(Tokens->getCurType() == TOK_STRING){
     std::string str = Tokens->getCurString();
     Tokens->getNextToken();
     return new StringLiteralAST(str);
+  }
+  else if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "("){
+    Tokens->getNextToken();
+    BaseAST *expr = visitAssignmentExpression();
+    if(!expr){
+      Tokens->applyTokenIndex(bkup);
+      return NULL;
+    }
+    if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ")"){
+      Tokens->getNextToken();
+      return expr;
+    }
+    Tokens->applyTokenIndex(bkup);
+    return NULL;
   }
   else if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "-"){
     /* omit */

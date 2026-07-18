@@ -1,0 +1,11 @@
+int main(){
+  int* arr;
+  int n;
+  int i;
+  n = 100;
+  arr = malloc(400);
+  for(i in range(100)){
+    arr[i] = i * i;
+  }
+  return arr[10];
+}
