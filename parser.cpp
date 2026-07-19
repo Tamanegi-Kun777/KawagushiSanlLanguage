@@ -53,6 +53,42 @@ bool Parser::visitTranslationUnit(){
 
 // ExternalDeclaration用構文解析メソッド
 bool Parser::visitExternalDeclaration(TranslationUnitAST *tunit){
+  // import 宣言を試す
+  if(Tokens->getCurType() == TOK_IMPORT){
+    Tokens->getNextToken();
+    if(Tokens->getCurType() != TOK_STRING){
+      return false;
+    }
+    std::string filename = Tokens->getCurString();
+    Tokens->getNextToken();
+    if(!(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ";")){
+      return false;
+    }
+    Tokens->getNextToken();
+    // 二重取り込みを防ぐ
+    if(std::find(ImportedFiles.begin(), ImportedFiles.end(), filename) != ImportedFiles.end()){
+      return true;
+    }
+    ImportedFiles.push_back(filename);
+    // TokenStream を差し替えて取り込んだファイルを解析
+    TokenStream *saved = Tokens;
+    Tokens = LexicalAnalysis(filename);
+    if(!Tokens){
+      Tokens = saved;
+      fprintf(stderr, "import: cannot open %s\n", filename.c_str());
+      return false;
+    }
+    while(Tokens->getCurType() != TOK_EOF){
+      if(!visitExternalDeclaration(tunit)){
+        SAFE_DELETE(Tokens);
+        Tokens = saved;
+        return false;
+      }
+    }
+    SAFE_DELETE(Tokens);
+    Tokens = saved;
+    return true;
+  }
   // using 宣言を試す
   if(visitUsingDeclaration()){
     return true;

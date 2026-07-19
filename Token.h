@@ -26,7 +26,8 @@ enum TokenType {
     TOK_MATCH,
     TOK_SIZEOF,
     TOK_BREAK,
-    TOK_CONTINUE,    
+    TOK_CONTINUE,
+    TOK_IMPORT,
     TOK_EOF // EOF
 };
 

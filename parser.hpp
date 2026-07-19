@@ -22,6 +22,7 @@ private:
 
   std::vector<std::string> VariableTable;
   std::map<std::string, std::string> VariableTypeTable;
+  std::vector<std::string> ImportedFiles;
   std::map<std::string, int> PrototypeTable;
   std::map<std::string, int> FunctionTable;
   std::map<std::string, StructDeclAST*> StructTable;

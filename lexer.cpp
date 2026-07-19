@@ -98,6 +98,9 @@ TokenStream *LexicalAnalysis(std::string input_filename){
         else if(token_str == "continue"){
           next_token = new Token(token_str, TOK_CONTINUE, line_num);
         }
+        else if(token_str == "import"){
+          next_token = new Token(token_str, TOK_IMPORT, line_num);
+        }
         else{
           next_token = new Token(token_str, TOK_IDENTIFIER, line_num);
         }
