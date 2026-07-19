@@ -69,6 +69,8 @@ private:
   BaseAST *visitPostfixExpression();
   BaseAST *visitPrimaryExpression();
   BaseAST *visitMatchStatement();
+  BaseAST *visitLogicalOrExpression();
+  BaseAST *visitLogicalAndExpression();
 };
 
 #endif

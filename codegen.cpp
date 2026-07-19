@@ -290,6 +290,12 @@ llvm::Value *CodeGen::generateStatement(BaseAST *stmt){
   else if(llvm::isa<ContinueStmtAST>(stmt)){
     return generateContinue();
   }
+  else if(llvm::isa<LogicalExprAST>(stmt)){
+    return generateLogicalExpression(llvm::dyn_cast<LogicalExprAST>(stmt));
+  }
+  else if(llvm::isa<NotExprAST>(stmt)){
+    return generateNotExpression(llvm::dyn_cast<NotExprAST>(stmt));
+  }
   else{
     return NULL;
   }
@@ -600,6 +606,9 @@ llvm::Value *CodeGen::generateBinaryExprssion(BinaryExprAST *bin_expr){
   else if(bin_expr->getOp() == "/"){
     if(is_float) return Builder->CreateFDiv(lhs_v, rhs_v, "div_tmp");
     return Builder->CreateSDiv(lhs_v, rhs_v, "div_tmp");
+  }
+  else if(bin_expr->getOp() == "%"){
+    return Builder->CreateSRem(lhs_v, rhs_v, "mod_tmp");
   }
   else if(bin_expr->getOp() == "<<"){
     return Builder->CreateShl(lhs_v, rhs_v, "shl_tmp");
@@ -1055,4 +1064,69 @@ llvm::Value *CodeGen::generateDeref(DerefAST *deref){
   // 変数（ポインタ）の値をロードすると、それが指す先のアドレスになる
   llvm::Type *pointee = var_addr->getType()->getPointerElementType();
   return Builder->CreateLoad(pointee, var_addr, "deref_addr");
+}
+llvm::Value *CodeGen::generateLogicalExpression(LogicalExprAST *logical_expr){
+  llvm::Function *func = Builder->GetInsertBlock()->getParent();
+  bool is_and = (logical_expr->getOp() == "&&");
+
+  // 左辺を評価して真偽値にする
+  llvm::Value *lhs_v = generateStatement(logical_expr->getLHS());
+  if(!lhs_v){
+    return NULL;
+  }
+  if(lhs_v->getType() != llvm::Type::getInt1Ty(Context)){
+    lhs_v = Builder->CreateICmpNE(lhs_v,
+              llvm::ConstantInt::get(lhs_v->getType(), 0), "lhs_bool");
+  }
+  llvm::BasicBlock *entry_bb = Builder->GetInsertBlock();
+  llvm::BasicBlock *rhs_bb = llvm::BasicBlock::Create(Context, "logic_rhs", func);
+  llvm::BasicBlock *end_bb = llvm::BasicBlock::Create(Context, "logic_end", func);
+
+  // && なら左辺が真のとき右辺へ、偽なら終了
+  // || なら左辺が偽のとき右辺へ、真なら終了
+  if(is_and){
+    Builder->CreateCondBr(lhs_v, rhs_bb, end_bb);
+  }
+  else{
+    Builder->CreateCondBr(lhs_v, end_bb, rhs_bb);
+  }
+
+  // 右辺ブロック
+  Builder->SetInsertPoint(rhs_bb);
+  llvm::Value *rhs_v = generateStatement(logical_expr->getRHS());
+  if(!rhs_v){
+    return NULL;
+  }
+  if(rhs_v->getType() != llvm::Type::getInt1Ty(Context)){
+    rhs_v = Builder->CreateICmpNE(rhs_v,
+              llvm::ConstantInt::get(rhs_v->getType(), 0), "rhs_bool");
+  }
+  llvm::BasicBlock *rhs_end_bb = Builder->GetInsertBlock();
+  Builder->CreateBr(end_bb);
+
+  // 終了ブロック: どちらから来たかで値が決まる
+  Builder->SetInsertPoint(end_bb);
+  llvm::PHINode *phi = Builder->CreatePHI(llvm::Type::getInt1Ty(Context), 2, "logic_result");
+  if(is_and){
+    // 左辺が偽で来た場合は false
+    phi->addIncoming(llvm::ConstantInt::getFalse(Context), entry_bb);
+  }
+  else{
+    // 左辺が真で来た場合は true
+    phi->addIncoming(llvm::ConstantInt::getTrue(Context), entry_bb);
+  }
+  phi->addIncoming(rhs_v, rhs_end_bb);
+  // i32 に変換して返す
+  return Builder->CreateZExt(phi, llvm::Type::getInt32Ty(Context), "logic_i32");
+}
+
+llvm::Value *CodeGen::generateNotExpression(NotExprAST *not_expr){
+  llvm::Value *v = generateStatement(not_expr->getExpr());
+  if(!v){
+    return NULL;
+  }
+  // 0 と等しいか（つまり偽か）を判定
+  llvm::Value *is_zero = Builder->CreateICmpEQ(v,
+                          llvm::ConstantInt::get(v->getType(), 0), "not_tmp");
+  return Builder->CreateZExt(is_zero, llvm::Type::getInt32Ty(Context), "not_i32");
 }

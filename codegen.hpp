@@ -77,6 +77,8 @@ private:
   llvm::Value *generateSizeof(SizeofAST *sizeof_ast);
   llvm::Value *generateAddressOf(AddressOfAST *addr_of);
   llvm::Value *generateDeref(DerefAST *deref);
+  llvm::Value *generateLogicalExpression(LogicalExprAST *logical_expr);
+  llvm::Value *generateNotExpression(NotExprAST *not_expr);
 };
 
 #endif

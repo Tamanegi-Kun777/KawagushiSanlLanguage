@@ -33,7 +33,9 @@ enum AstID
   BreakStmtID,
   ContinueStmtID,
   AddressOfID,
-  DerefID
+  DerefID,
+  LogicalExprID,
+  NotExprID
 };
 
 // ファイルの、先頭あたりに、追加
@@ -450,6 +452,41 @@ public:
     return base->getValueID() == DerefID;
   };
   std::string getVariableName(){return VariableName;};
+};
+/*
+ *  論理演算 && || を表すAST（短絡評価）
+ */
+class LogicalExprAST : public BaseAST
+{
+  std::string Op;
+  BaseAST *LHS, *RHS;
+public:
+  LogicalExprAST(const std::string &op, BaseAST *lhs, BaseAST *rhs)
+    : BaseAST(LogicalExprID), Op(op), LHS(lhs), RHS(rhs){};
+  ~LogicalExprAST(){};
+  static inline bool classof(LogicalExprAST const*){return true;};
+  static inline bool classof(BaseAST const* base){
+    return base->getValueID() == LogicalExprID;
+  };
+  std::string getOp(){return Op;};
+  BaseAST *getLHS(){return LHS;};
+  BaseAST *getRHS(){return RHS;};
+};
+/*
+ *  論理否定 ! を表すAST
+ */
+class NotExprAST : public BaseAST
+{
+  BaseAST *Expr;
+public:
+  NotExprAST(BaseAST *expr)
+    : BaseAST(NotExprID), Expr(expr){};
+  ~NotExprAST(){};
+  static inline bool classof(NotExprAST const*){return true;};
+  static inline bool classof(BaseAST const* base){
+    return base->getValueID() == NotExprID;
+  };
+  BaseAST *getExpr(){return Expr;};
 };
 /*
  *  配列要素アクセス(a[3])を表すAST

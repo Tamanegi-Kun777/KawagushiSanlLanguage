@@ -1758,6 +1758,18 @@ BaseAST *Parser::visitMultiplicativeExpression(BaseAST *lhs){
       return NULL;
     }
   }
+  else if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "%"){
+    Tokens->getNextToken();
+    rhs = visitPostfixExpression();
+    if(rhs){
+      return visitMultiplicativeExpression(new BinaryExprAST("%", lhs, rhs));
+    }
+    else{
+      SAFE_DELETE(lhs);
+      Tokens->applyTokenIndex(bkup);
+      return NULL;
+    }
+  }
   return lhs;
 }
 
