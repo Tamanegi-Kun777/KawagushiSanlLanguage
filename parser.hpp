@@ -43,6 +43,8 @@ public:
   TranslationUnitAST &getAST();
 
 private:
+  //int ErrorLine;
+  std::string ErrorToken;
 /*
  *  各種構文解析メソッド
  */

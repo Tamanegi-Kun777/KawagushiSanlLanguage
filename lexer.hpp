@@ -80,6 +80,7 @@ public:
     Tokens.push_back(token);
     return true;
   }
+  int getCurLine(){return Tokens[CurIndex]->getLine();};
   Token getToken();
 
   TokenType getCurType(){return Tokens[CurIndex]->getTokenType();};

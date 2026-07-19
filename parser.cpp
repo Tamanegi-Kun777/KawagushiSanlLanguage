@@ -40,6 +40,8 @@ bool Parser::visitTranslationUnit(){
   // ExternalDecl
   while(true){
     if(!visitExternalDeclaration(TU)){
+      fprintf(stderr, "error: line %d: unexpected token '%s'\n",
+              Tokens->getCurLine(), Tokens->getCurString().c_str());
       SAFE_DELETE(TU);
       return false;
     }

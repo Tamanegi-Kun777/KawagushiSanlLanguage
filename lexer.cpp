@@ -5,7 +5,7 @@ TokenStream *LexicalAnalysis(std::string input_filename){
   std::ifstream ifs;
   std::string cur_line;
   std::string token_str;
-  int line_num = 0;
+  int line_num = 1;
   bool iscomment = false;
 
   ifs.open(input_filename.c_str(), std::ios::in);
@@ -41,16 +41,10 @@ TokenStream *LexicalAnalysis(std::string input_filename){
       // IDENTIFIRE
       else if(isalpha(next_char)){
         token_str += next_char;
-        next_char = cur_line.at(index++);
-        while(isalnum(next_char)){
-          token_str += next_char;
-          next_char = cur_line.at(index++);
-          if(index == length){
-            break;
-          }
+        while(index < length && isalnum(cur_line.at(index))){
+          token_str += cur_line.at(index);
+          index++;
         }
-        index--;
-
         if(token_str == "int"){
           next_token = new Token(token_str, TOK_INT, line_num);
         }
@@ -111,20 +105,19 @@ TokenStream *LexicalAnalysis(std::string input_filename){
         }
         else{
           token_str += next_char;
-          next_char = cur_line.at(index++);
-          while(isdigit(next_char)){
-            token_str += next_char;
-            next_char = cur_line.at(index++);
+          while(index < length && isdigit(cur_line.at(index))){
+            token_str += cur_line.at(index);
+            index++;
           }
           bool is_float = false;
           // 小数点があれば小数部を読む
-          if(next_char == '.'){
+          if(index < length && cur_line.at(index) == '.'){
             is_float = true;
-            token_str += next_char;
-            next_char = cur_line.at(index++);
-            while(isdigit(next_char)){
-              token_str += next_char;
-              next_char = cur_line.at(index++);
+            token_str += cur_line.at(index);
+            index++;
+            while(index < length && isdigit(cur_line.at(index))){
+              token_str += cur_line.at(index);
+              index++;
             }
           }
           if(is_float){
@@ -133,7 +126,6 @@ TokenStream *LexicalAnalysis(std::string input_filename){
           else{
             next_token = new Token(token_str, TOK_DIGIT, line_num);
           }
-index--;
         }
       }
       // Character literal 'A'
