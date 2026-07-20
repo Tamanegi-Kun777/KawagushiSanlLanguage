@@ -310,11 +310,15 @@ llvm::Value *CodeGen::generateStatement(BaseAST *stmt){
     llvm::Value *addr = generateDeref(llvm::dyn_cast<DerefAST>(stmt));
     return Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "deref_tmp");
   }
-  else if(llvm::isa<LogicalExprAST>(cond)){
-    cond_v = generateLogicalExpression(llvm::dyn_cast<LogicalExprAST>(cond));
-  }
-  else if(llvm::isa<NotExprAST>(cond)){
-    cond_v = generateNotExpression(llvm::dyn_cast<NotExprAST>(cond));
+//  else if(llvm::isa<LogicalExprAST>(cond)){
+//    cond_v = generateLogicalExpression(llvm::dyn_cast<LogicalExprAST>(cond));
+//  }
+//  else if(llvm::isa<NotExprAST>(cond)){
+//    cond_v = generateNotExpression(llvm::dyn_cast<NotExprAST>(cond));
+//  }
+  else if(llvm::isa<DerefAST>(stmt)){
+    llvm::Value *addr = generateDeref(llvm::dyn_cast<DerefAST>(stmt));
+    return Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "deref_tmp");
   }
   else{
     return NULL;
@@ -333,8 +337,18 @@ llvm::Value *CodeGen::generateIfStatement(IfStmtAST *if_stmt){
   else if(llvm::isa<NumberAST>(cond)){
     cond_v = generateNumber(llvm::dyn_cast<NumberAST>(cond)->getNumberValue());
   }
+  else if(llvm::isa<LogicalExprAST>(cond)){
+    cond_v = generateLogicalExpression(llvm::dyn_cast<LogicalExprAST>(cond));
+  }
+  else if(llvm::isa<NotExprAST>(cond)){
+    cond_v = generateNotExpression(llvm::dyn_cast<NotExprAST>(cond));
+  }
   if(!cond_v){
     return NULL;
+  }
+  if(cond_v->getType() != llvm::Type::getInt1Ty(Context)){
+    cond_v = Builder->CreateICmpNE(cond_v,
+              llvm::ConstantInt::get(cond_v->getType(), 0), "cond_bool");
   }
 
   // else節があるか判定
@@ -413,6 +427,10 @@ llvm::Value *CodeGen::generateWhileStatement(WhileStmtAST *while_stmt){
   if(!cond_v){
     return NULL;
   }
+  if(cond_v->getType() != llvm::Type::getInt1Ty(Context)){
+    cond_v = Builder->CreateICmpNE(cond_v,
+              llvm::ConstantInt::get(cond_v->getType(), 0), "cond_bool");
+  }
   // 条件が真ならbody、偽ならafter
   Builder->CreateCondBr(cond_v, body_bb, after_bb);
   // bodyブロック: 本体を生成
@@ -461,6 +479,10 @@ llvm::Value *CodeGen::generateForStatement(ForStmtAST *for_stmt){
   }
   if(!cond_v){
     return NULL;
+  }
+  if(cond_v->getType() != llvm::Type::getInt1Ty(Context)){
+    cond_v = Builder->CreateICmpNE(cond_v,
+              llvm::ConstantInt::get(cond_v->getType(), 0), "cond_bool");
   }
   Builder->CreateCondBr(cond_v, body_bb, after_bb);
 
