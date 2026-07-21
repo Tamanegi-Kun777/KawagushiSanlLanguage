@@ -335,6 +335,11 @@ llvm::Value *CodeGen::generateStatement(BaseAST *stmt){
     if(!addr){ return NULL; }
     return Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "chain_tmp");
   }
+  else if(llvm::isa<MultiArrayAccessAST>(stmt)){
+    llvm::Value *addr = generateMultiArrayAddress(llvm::dyn_cast<MultiArrayAccessAST>(stmt));
+    if(!addr){ return NULL; }
+    return Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "marr_tmp");
+  }
 //  else if(llvm::isa<LogicalExprAST>(cond)){
 //    cond_v = generateLogicalExpression(llvm::dyn_cast<LogicalExprAST>(cond));
 //  }
@@ -654,6 +659,10 @@ llvm::Value *CodeGen::generateBinaryExprssion(BinaryExprAST *bin_expr){
     llvm::Value *addr = generateChainMemberAddress(llvm::dyn_cast<ChainMemberAccessAST>(rhs));
     rhs_v = Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "chain_tmp");
   }
+  else if(llvm::isa<MultiArrayAccessAST>(rhs)){
+    llvm::Value *addr = generateMultiArrayAddress(llvm::dyn_cast<MultiArrayAccessAST>(rhs));
+    rhs_v = Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "marr_tmp");
+  }
   // double が絡む演算のため型を揃える（代入以外で使う）
   bool is_float = (lhs_v && lhs_v->getType()->isDoubleTy()) || (rhs_v && rhs_v->getType()->isDoubleTy());
   if(is_float && bin_expr->getOp() != "="){
@@ -863,6 +872,10 @@ llvm::Value *CodeGen::generateJumpStatement(JumpStmtAST *jump_stmt){
   else if(llvm::isa<ChainMemberAccessAST>(expr)){
     llvm::Value *addr = generateChainMemberAddress(llvm::dyn_cast<ChainMemberAccessAST>(expr));
     ret_v = Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "chain_tmp");
+  }
+  else if(llvm::isa<MultiArrayAccessAST>(expr)){
+    llvm::Value *addr = generateMultiArrayAddress(llvm::dyn_cast<MultiArrayAccessAST>(expr));
+    ret_v = Builder->CreateLoad(addr->getType()->getPointerElementType(), addr, "marr_tmp");
   }
   DBG("[CG] JumpStmt: exprType binary=%d var=%d num=%d, ret_v=%p\n",
           llvm::isa<BinaryExprAST>(expr), llvm::isa<VariableAST>(expr),
