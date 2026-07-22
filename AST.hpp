@@ -291,6 +291,7 @@ class StructDeclAST : public BaseAST
   std::vector<std::string> MemberNames;
   std::vector<std::string> MemberTypes;
   std::vector<int> MemberArraySizes;   // 0なら配列でない
+  std::vector<std::vector<int>> MemberArrayDims;   // 多次元の各次元サイズ
   std::vector<FunctionAST*> Methods;
 public:
   StructDeclAST(const std::string &name) : BaseAST(StructDeclID), Name(name){};
@@ -300,10 +301,11 @@ public:
     return base->getValueID() == StructDeclID;
   };
   std::string getName(){return Name;};
-  bool addMember(const std::string &member_name, const std::string &member_type, int array_size = 0){
+bool addMember(const std::string &member_name, const std::string &member_type, int array_size = 0){
     MemberNames.push_back(member_name);
     MemberTypes.push_back(member_type);
     MemberArraySizes.push_back(array_size);
+    MemberArrayDims.push_back(std::vector<int>());
     return true;
   };
 
@@ -319,6 +321,16 @@ public:
   int getMemberArraySize(int i){
     if(i < MemberArraySizes.size()){ return MemberArraySizes.at(i); }
     else{ return 0; }
+  };
+  void setMemberArrayDims(int i, const std::vector<int> &dims){
+    if(i < (int)MemberArrayDims.size()){ MemberArrayDims[i] = dims; }
+  };
+  int getMemberArrayDimNum(int i){
+    if(i < (int)MemberArrayDims.size()){ return MemberArrayDims[i].size(); }
+    return 0;
+  };
+  int getMemberArrayDim(int i, int k){
+    return MemberArrayDims[i][k];
   };
   bool addMethod(FunctionAST *method){Methods.push_back(method); return true;};
   int getMethodNum(){return Methods.size();};
@@ -355,6 +367,7 @@ class MemberArrayAccessAST : public BaseAST
   std::string VariableName;
   std::string MemberName;
   BaseAST *Index;
+  std::vector<BaseAST*> Indices;
 public:
   MemberArrayAccessAST(const std::string &var_name, const std::string &member_name, BaseAST *index)
     : BaseAST(MemberArrayAccessID), VariableName(var_name), MemberName(member_name), Index(index){};
@@ -367,6 +380,9 @@ public:
   std::string getVariableName(){return VariableName;};
   std::string getMemberName(){return MemberName;};
   BaseAST *getIndex(){return Index;};
+  void addIndex(BaseAST *index){Indices.push_back(index);};
+  int getIndexNum(){return Indices.size();};
+  BaseAST *getIndexAt(int i){return Indices[i];};
 };
 class ArrayMemberAccessAST : public BaseAST
 {

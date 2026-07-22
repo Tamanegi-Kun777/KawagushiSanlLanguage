@@ -1,0 +1,6 @@
+class T { int grid[3][3]; }
+int main(){
+  T t;
+  t.grid[1][2] = 42;
+  return t.grid[1][2];
+}

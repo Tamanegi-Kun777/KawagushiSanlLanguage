@@ -194,11 +194,13 @@ StructDeclAST *Parser::visitStructDeclaration(){
         return NULL;
       }
       // 配列メンバ: 名前の後に [数] があれば読む
+// 配列メンバ: 名前の後に [数] があれば読む（多次元対応）
       int member_array_size = 0;
-      if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
+      std::vector<int> member_dims;
+      while(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
         Tokens->getNextToken();
         if(Tokens->getCurType() == TOK_DIGIT){
-          member_array_size = Tokens->getCurNumVal();
+          member_dims.push_back(Tokens->getCurNumVal());
           Tokens->getNextToken();
         }
         else{
@@ -215,6 +217,13 @@ StructDeclAST *Parser::visitStructDeclaration(){
           return NULL;
         }
       }
+      // 総要素数を計算
+      if(member_dims.size() > 0){
+        member_array_size = 1;
+        for(int i = 0; i < (int)member_dims.size(); i++){
+          member_array_size = member_array_size * member_dims[i];
+        }
+      }
       if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == ";"){
         Tokens->getNextToken();
       }
@@ -224,6 +233,9 @@ StructDeclAST *Parser::visitStructDeclaration(){
         return NULL;
       }
       struct_decl->addMember(member_name, member_type, member_array_size);
+      if(member_dims.size() > 1){
+        struct_decl->setMemberArrayDims(struct_decl->getMemberNum() - 1, member_dims);
+      }
       CurrentStructMembers.push_back(member_name);
     }
     else{
@@ -656,7 +668,25 @@ BaseAST *Parser::visitAssignmentExpression(){
             }
             if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "]"){
               Tokens->getNextToken();
-              lhs = new MemberArrayAccessAST(lhs_name, member_name, index);
+MemberArrayAccessAST *marr = new MemberArrayAccessAST(lhs_name, member_name, index);
+              marr->addIndex(index);
+              while(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
+                Tokens->getNextToken();
+                BaseAST *idx2 = visitAssignmentExpression();
+                if(!idx2){
+                  SAFE_DELETE(marr);
+                  Tokens->applyTokenIndex(bkup);
+                  return NULL;
+                }
+                if(!(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "]")){
+                  SAFE_DELETE(marr);
+                  Tokens->applyTokenIndex(bkup);
+                  return NULL;
+                }
+                Tokens->getNextToken();
+                marr->addIndex(idx2);
+              }
+              lhs = marr;
             }
             else{
               Tokens->applyTokenIndex(bkup);
@@ -980,7 +1010,25 @@ BaseAST *Parser::visitPrimaryExpression(){
           }
           if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "]"){
             Tokens->getNextToken();
-            return new MemberArrayAccessAST(var_name, member_name, index);
+MemberArrayAccessAST *marr = new MemberArrayAccessAST(var_name, member_name, index);
+            marr->addIndex(index);
+            while(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
+              Tokens->getNextToken();
+              BaseAST *idx2 = visitAssignmentExpression();
+              if(!idx2){
+                SAFE_DELETE(marr);
+                Tokens->applyTokenIndex(bkup);
+                return NULL;
+              }
+              if(!(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "]")){
+                SAFE_DELETE(marr);
+                Tokens->applyTokenIndex(bkup);
+                return NULL;
+              }
+              Tokens->getNextToken();
+              marr->addIndex(idx2);
+            }
+            return marr;
           }
           Tokens->applyTokenIndex(bkup);
           return NULL;
