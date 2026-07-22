@@ -814,6 +814,7 @@ else if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
         lhs = new VariableAST(lhs_name);
       }
       BaseAST *rhs;
+
       if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "="){
         Tokens->getNextToken();
         if((rhs = visitRelationalExpression())){
@@ -823,6 +824,38 @@ else if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
           SAFE_DELETE(lhs);
           Tokens->applyTokenIndex(bkup);
         }
+      }
+      else if(Tokens->getCurType() == TOK_SYMBOL &&
+              (Tokens->getCurString() == "+=" || Tokens->getCurString() == "-=" ||
+               Tokens->getCurString() == "*=" || Tokens->getCurString() == "/=" ||
+               Tokens->getCurString() == "%=")){
+        if(!llvm::isa<MemberAccessAST>(lhs)){
+          SAFE_DELETE(lhs);
+          Tokens->applyTokenIndex(bkup);
+          return NULL;
+        }
+        std::string cop = Tokens->getCurString().substr(0, 1);
+        Tokens->getNextToken();
+        if((rhs = visitRelationalExpression())){
+          return new BinaryExprAST("=", lhs,
+                   new BinaryExprAST(cop, new VariableAST(lhs_name), rhs));
+        }
+        else{
+          SAFE_DELETE(lhs);
+          Tokens->applyTokenIndex(bkup);
+        }
+      }
+      else if(Tokens->getCurType() == TOK_SYMBOL &&
+              (Tokens->getCurString() == "++" || Tokens->getCurString() == "--")){
+        if(!llvm::isa<VariableAST>(lhs)){
+          SAFE_DELETE(lhs);
+          Tokens->applyTokenIndex(bkup);
+          return NULL;
+        }
+        std::string iop = Tokens->getCurString().substr(0, 1);
+        Tokens->getNextToken();
+        return new BinaryExprAST("=", lhs,
+                 new BinaryExprAST(iop, new VariableAST(lhs_name), new NumberAST(1)));
       }
       else{
         SAFE_DELETE(lhs);
@@ -853,11 +886,31 @@ else if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
       else{
         lhs = new MemberAccessAST("this", member_name);
       }
-      BaseAST *rhs;
+BaseAST *rhs;
       if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "="){
         Tokens->getNextToken();
         if((rhs = visitRelationalExpression())){
           return new BinaryExprAST("=", lhs, rhs);
+        }
+        else{
+          SAFE_DELETE(lhs);
+          Tokens->applyTokenIndex(bkup);
+        }
+      }
+      else if(Tokens->getCurType() == TOK_SYMBOL &&
+              (Tokens->getCurString() == "+=" || Tokens->getCurString() == "-=" ||
+               Tokens->getCurString() == "*=" || Tokens->getCurString() == "/=" ||
+               Tokens->getCurString() == "%=")){
+        if(!llvm::isa<VariableAST>(lhs)){
+          SAFE_DELETE(lhs);
+          Tokens->applyTokenIndex(bkup);
+          return NULL;
+        }
+        std::string cop = Tokens->getCurString().substr(0, 1);
+        Tokens->getNextToken();
+        if((rhs = visitRelationalExpression())){
+                return new BinaryExprAST("=", lhs,
+                   new BinaryExprAST(cop, new MemberAccessAST("this", member_name), rhs));
         }
         else{
           SAFE_DELETE(lhs);

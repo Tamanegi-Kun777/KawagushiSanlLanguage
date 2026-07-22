@@ -149,7 +149,6 @@ TokenStream *LexicalAnalysis(std::string input_filename){
       else if(next_char == '/'){
         token_str += next_char;
         next_char = cur_line.at(index++);
-
         // single line comment
         if(next_char == '/'){
           break;
@@ -158,6 +157,11 @@ TokenStream *LexicalAnalysis(std::string input_filename){
         else if(next_char == '*'){
           iscomment = true;
           continue;
+        }
+        // /=
+        else if(next_char == '='){
+          token_str += '=';
+          next_token = new Token(token_str, TOK_SYMBOL, line_num);
         }
         // Division
         else{
@@ -199,6 +203,14 @@ TokenStream *LexicalAnalysis(std::string input_filename){
             token_str += next_char;
             next_token = new Token(token_str, TOK_SYMBOL, line_num);
           }
+        }
+        else if((next_char == '+' || next_char == '-' || next_char == '*' ||
+                 next_char == '/' || next_char == '%') &&
+                index < length && cur_line.at(index) == '='){
+          token_str += next_char;
+          token_str += '=';
+          index++;
+          next_token = new Token(token_str, TOK_SYMBOL, line_num);
         }
         else if(next_char == '&' && index < length && cur_line.at(index) == '&'){
           token_str += '&';

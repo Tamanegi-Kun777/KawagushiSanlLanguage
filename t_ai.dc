@@ -1,0 +1,6 @@
+int main(){
+  int a[5];
+  a[0] = 40;
+  a[0] += 2;
+  return a[0];
+}
