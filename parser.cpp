@@ -687,6 +687,7 @@ MemberArrayAccessAST *marr = new MemberArrayAccessAST(lhs_name, member_name, ind
                 marr->addIndex(idx2);
               }
               lhs = marr;
+              
             }
             else{
               Tokens->applyTokenIndex(bkup);
@@ -771,7 +772,7 @@ Tokens->getNextToken();
               return NULL;
             }
           }
-          else if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
+else if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
             MultiArrayAccessAST *marr = new MultiArrayAccessAST(lhs_name);
             marr->addIndex(index);
             while(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
@@ -787,6 +788,16 @@ Tokens->getNextToken();
               }
               Tokens->getNextToken();
               marr->addIndex(idx2);
+            }
+            if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "."){
+              Tokens->getNextToken();
+              if(Tokens->getCurType() != TOK_IDENTIFIER){
+                SAFE_DELETE(marr);
+                Tokens->applyTokenIndex(bkup);
+                return NULL;
+              }
+              marr->setMemberName(Tokens->getCurString());
+              Tokens->getNextToken();
             }
             lhs = marr;
           }
@@ -972,6 +983,16 @@ BaseAST *Parser::visitPrimaryExpression(){
             }
             Tokens->getNextToken();
             marr->addIndex(idx2);
+          }
+          if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "."){
+            Tokens->getNextToken();
+            if(Tokens->getCurType() != TOK_IDENTIFIER){
+              SAFE_DELETE(marr);
+              Tokens->applyTokenIndex(bkup);
+              return NULL;
+            }
+            marr->setMemberName(Tokens->getCurString());
+            Tokens->getNextToken();
           }
           return marr;
         }

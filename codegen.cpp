@@ -1072,8 +1072,29 @@ llvm::Value *CodeGen::generateMultiArrayAddress(MultiArrayAccessAST *marr){
   std::vector<llvm::Value*> gep_idx;
   gep_idx.push_back(generateNumber(0));
   gep_idx.push_back(offset);
-  return Builder->CreateInBoundsGEP(
+  llvm::Value *elem_addr = Builder->CreateInBoundsGEP(
            var->getType()->getPointerElementType(), var, gep_idx, "marr_ptr");
+  // メンバ名があれば、さらにメンバのアドレスを取る
+  if(marr->hasMember()){
+    std::string elem_type_name = VariableTypeTable[marr->getVariableName()];
+    if(StructInfoTable.find(elem_type_name) == StructInfoTable.end()){
+      return NULL;
+    }
+    StructDeclAST *sd = StructInfoTable[elem_type_name];
+    int midx = -1;
+    for(int j = 0; j < sd->getMemberNum(); j++){
+      if(sd->getMemberName(j) == marr->getMemberName()){
+        midx = j;
+        break;
+      }
+    }
+    if(midx < 0){
+      return NULL;
+    }
+    return Builder->CreateStructGEP(
+             elem_addr->getType()->getPointerElementType(), elem_addr, midx, "marr_member");
+  }
+  return elem_addr;
 }
 llvm::Value *CodeGen::generateMethodCall(MemberAccessAST *member){
   llvm::ValueSymbolTable *vs_table = CurFunc->getValueSymbolTable();

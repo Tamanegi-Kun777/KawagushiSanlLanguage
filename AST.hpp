@@ -545,21 +545,22 @@ public:
 class MultiArrayAccessAST : public BaseAST {
   std::string VariableName;
   std::vector<BaseAST*> Indices;
-
+  std::string MemberName;
 public:
   MultiArrayAccessAST(const std::string &var_name)
     : BaseAST(MultiArrayAccessID), VariableName(var_name){};
   ~MultiArrayAccessAST(){};
-
   static inline bool classof(MultiArrayAccessAST const*){return true;};
   static inline bool classof(BaseAST const* base){
     return base->getValueID() == MultiArrayAccessID;
   };
-
   void addIndex(BaseAST *index){Indices.push_back(index);};
   std::string getVariableName(){return VariableName;};
   int getIndexNum(){return Indices.size();};
   BaseAST *getIndex(int i){return Indices[i];};
+  void setMemberName(const std::string &name){MemberName = name;};
+  std::string getMemberName(){return MemberName;};
+  bool hasMember(){return !MemberName.empty();};
 };
 /*
  *  配列要素アクセス(a[3])を表すAST
