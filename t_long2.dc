@@ -1,0 +1,11 @@
+long f(){
+  long x;
+  x = 3000000000;
+  return x;
+}
+int main(){
+  long y;
+  y = f();
+  if(y > 2000000000){ return 42; }
+  return 0;
+}

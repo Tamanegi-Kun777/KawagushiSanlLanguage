@@ -28,7 +28,8 @@ enum TokenType {
     TOK_BREAK,
     TOK_CONTINUE,
     TOK_IMPORT,
-    TOK_EOF // EOF
+    TOK_EOF, // EOF
+    TOK_LONG
 };
 
 /*

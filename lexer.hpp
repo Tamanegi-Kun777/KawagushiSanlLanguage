@@ -32,7 +32,8 @@ enum TokenType
   TOK_BREAK,
   TOK_CONTINUE,
   TOK_IMPORT,
-  TOK_EOF
+  TOK_EOF,
+  TOK_LONG
 };
 
 class Token

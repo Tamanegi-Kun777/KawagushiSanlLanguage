@@ -652,23 +652,20 @@ public:
 
 class NumberAST : public BaseAST
 {
-  int Val;
+  long long Val;
 
 public:
-  NumberAST(int val) : BaseAST(NumberID), Val(val){};
+  NumberAST(long long val) : BaseAST(NumberID), Val(val){};
 
   ~NumberAST(){};
 
-  //NumberASTなのでtrueを返す
   static inline bool classof(NumberAST const*){return true;};
 
-  //渡されたBaseASTがNumberASTか判定する
   static inline bool classof(BaseAST const* base){
     return base->getValueID() == NumberID;
   };
 
-  //このASTは表現する値を取得する
-  int getNumberValue(){return Val;};
+  long long getNumberValue(){return Val;};
 };
 /*
  *  浮動小数点数を表すAST

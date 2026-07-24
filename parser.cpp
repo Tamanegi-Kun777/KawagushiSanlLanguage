@@ -169,11 +169,12 @@ StructDeclAST *Parser::visitStructDeclaration(){
       continue;
     }
     // メンバ変数(int/char 名前 ;)を試す
-  if(Tokens->getCurType() == TOK_INT || Tokens->getCurType() == TOK_CHAR || Tokens->getCurType() == TOK_DOUBLE ||
+  if(Tokens->getCurType() == TOK_INT || Tokens->getCurType() == TOK_LONG || Tokens->getCurType() == TOK_CHAR || Tokens->getCurType() == TOK_DOUBLE ||
        (Tokens->getCurType() == TOK_IDENTIFIER &&
         StructTable.find(Tokens->getCurString()) != StructTable.end())){
       std::string member_type;
       if(Tokens->getCurType() == TOK_INT){ member_type = "int"; }
+      else if(Tokens->getCurType() == TOK_LONG){ member_type = "long"; }
       else if(Tokens->getCurType() == TOK_CHAR){ member_type = "char"; }
       else if(Tokens->getCurType() == TOK_DOUBLE){ member_type = "double"; }
       else{ member_type = Tokens->getCurString(); }
@@ -286,6 +287,7 @@ bool Parser::visitUsingDeclaration(){
   // 実際の型（int/char/double または 構造体名）
   std::string real_type;
   if(Tokens->getCurType() == TOK_INT){ real_type = "int"; Tokens->getNextToken(); }
+  else if(Tokens->getCurType() == TOK_LONG){ real_type = "long"; Tokens->getNextToken(); }
   else if(Tokens->getCurType() == TOK_CHAR){ real_type = "char"; Tokens->getNextToken(); }
   else if(Tokens->getCurType() == TOK_DOUBLE){ real_type = "double"; Tokens->getNextToken(); }
   else if(Tokens->getCurType() == TOK_IDENTIFIER &&
@@ -344,9 +346,10 @@ int value = 0;
       // このバリアントを構造体として作る
       StructDeclAST *variant_decl = new StructDeclAST(member);
       // メンバ（int/char/double 名前;）を読む
-      while(Tokens->getCurType() == TOK_INT || Tokens->getCurType() == TOK_CHAR || Tokens->getCurType() == TOK_DOUBLE){
+      while(Tokens->getCurType() == TOK_INT || Tokens->getCurType() == TOK_LONG || Tokens->getCurType() == TOK_CHAR || Tokens->getCurType() == TOK_DOUBLE){
         std::string member_type;
         if(Tokens->getCurType() == TOK_INT){ member_type = "int"; }
+        else if(Tokens->getCurType() == TOK_LONG){ member_type = "long"; }
         else if(Tokens->getCurType() == TOK_CHAR){ member_type = "char"; }
         else{ member_type = "double"; }
         Tokens->getNextToken();
@@ -478,6 +481,7 @@ PrototypeAST *Parser::visitPrototype(){
 // 戻り値の型
   std::string ret_type;
   if(Tokens->getCurType() == TOK_INT){ ret_type = "int"; Tokens->getNextToken(); }
+  else if(Tokens->getCurType() == TOK_LONG){ ret_type = "long"; Tokens->getNextToken(); }
   else if(Tokens->getCurType() == TOK_CHAR){ ret_type = "char"; Tokens->getNextToken(); }
   else if(Tokens->getCurType() == TOK_DOUBLE){ ret_type = "double"; Tokens->getNextToken(); }
   else{
@@ -518,6 +522,7 @@ PrototypeAST *Parser::visitPrototype(){
     }
     std::string param_type;
     if(Tokens->getCurType() == TOK_INT){ param_type = "int"; Tokens->getNextToken(); }
+    else if(Tokens->getCurType() == TOK_LONG){ param_type = "long"; Tokens->getNextToken(); }
     else if(Tokens->getCurType() == TOK_CHAR){ param_type = "char"; Tokens->getNextToken(); }
     else if(Tokens->getCurType() == TOK_DOUBLE){ param_type = "double"; Tokens->getNextToken(); }
     else{
@@ -772,7 +777,7 @@ Tokens->getNextToken();
               return NULL;
             }
           }
-else if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
+          else if(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
             MultiArrayAccessAST *marr = new MultiArrayAccessAST(lhs_name);
             marr->addIndex(index);
             while(Tokens->getCurType() == TOK_SYMBOL && Tokens->getCurString() == "["){
@@ -1242,6 +1247,10 @@ MemberArrayAccessAST *marr = new MemberArrayAccessAST(var_name, member_name, ind
     std::string type_name;
     if(Tokens->getCurType() == TOK_INT){
       type_name = "int";
+      Tokens->getNextToken();
+    }
+    else if(Tokens->getCurType() == TOK_LONG){
+      type_name = "long";
       Tokens->getNextToken();
     }
     else if(Tokens->getCurType() == TOK_CHAR){
@@ -1958,6 +1967,10 @@ VariableDeclAST *Parser::visitVariableDeclaration(){
   // 型: int または 登録済みの構造体名
   if(Tokens->getCurType() == TOK_INT){
     type_name = "int";
+    Tokens->getNextToken();
+  }
+  else if(Tokens->getCurType() == TOK_LONG){
+    type_name = "long";
     Tokens->getNextToken();
   }
   else if(Tokens->getCurType() == TOK_CHAR){

@@ -48,6 +48,9 @@ TokenStream *LexicalAnalysis(std::string input_filename){
         if(token_str == "int"){
           next_token = new Token(token_str, TOK_INT, line_num);
         }
+        else if(token_str == "long"){
+          next_token = new Token(token_str, TOK_LONG, line_num);
+        }
         else if(token_str == "return"){
           next_token = new Token(token_str, TOK_RETURN, line_num);
         }

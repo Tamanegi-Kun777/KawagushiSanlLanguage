@@ -108,6 +108,9 @@ llvm::Type *CodeGen::getLLVMType(const std::string &type_name){
   if(type_name == "int"){
     return llvm::Type::getInt32Ty(Context);
   }
+  else if(type_name == "long"){
+    return llvm::Type::getInt64Ty(Context);
+  }
   else if(type_name == "char"){
     return llvm::Type::getInt8Ty(Context);
   }
@@ -682,6 +685,19 @@ llvm::Value *CodeGen::generateBinaryExprssion(BinaryExprAST *bin_expr){
       lhs_v = Builder->CreateIntToPtr(lhs_v, rhs_v->getType(), "int2ptr");
     }
   }  
+  // 整数の幅が違えば揃える（狭い方を符号拡張）
+  if(lhs_v && rhs_v &&
+     lhs_v->getType()->isIntegerTy() && rhs_v->getType()->isIntegerTy() &&
+     lhs_v->getType() != rhs_v->getType()){
+    unsigned lw = lhs_v->getType()->getIntegerBitWidth();
+    unsigned rw = rhs_v->getType()->getIntegerBitWidth();
+    if(lw < rw){
+      lhs_v = Builder->CreateSExt(lhs_v, rhs_v->getType(), "sext_lhs");
+    }
+    else{
+      rhs_v = Builder->CreateSExt(rhs_v, lhs_v->getType(), "sext_rhs");
+    }
+  }
   if(bin_expr->getOp() == "="){
     llvm::Type *elem_type = lhs_v->getType()->getPointerElementType();
     rhs_v = convertType(rhs_v, elem_type);
@@ -780,6 +796,7 @@ llvm::Value *CodeGen::generateCallExpression(CallExprAST *call_expr){
     else if(llvm::isa<BinaryExprAST>(arg)){
       BinaryExprAST *bin_expr = llvm::dyn_cast<BinaryExprAST>(arg);
       arg_v = generateBinaryExprssion(llvm::dyn_cast<BinaryExprAST>(arg));
+      
       if(bin_expr->getOp() == "="){
         VariableAST *var = llvm::dyn_cast<VariableAST>(bin_expr->getLHS());
         llvm::Value *ptr = vs_table->lookup(var->getName());
