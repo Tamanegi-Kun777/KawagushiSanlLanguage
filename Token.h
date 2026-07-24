@@ -39,14 +39,14 @@ class Token {
     private:
     TokenType Type;
     std::string TokenString;
-    int Number;
+    long long Number;
     int Line;
 
     public:
     Token(std::string string, TokenType type, int line)
         : TokenString(string), Type(type), Line(line){
             if(type == TOK_DIGIT)
-                Number = atoi(string.c_str());
+                Number = atoll(string.c_str());
             else
                 Number = 0x7ffffff;
     };
@@ -59,7 +59,7 @@ class Token {
     std::string getTokenString(){return TokenString;};
   
     // トークンの数値を取得（種別が数字である場合に使用）
-    int getNumberValue(){return Number;};
+    long long getNumberValue(){return Number;};
   
     // トークンの出現した行数を取得
     int getLine(){return Line;};

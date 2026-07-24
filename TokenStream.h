@@ -27,7 +27,7 @@ class TokenStream {
         std::string getCurString(){return Tokens[CurIndex]->getTokenString();}
 
         // トークンの数値を取得
-        int getCurNumVal(){return Tokens[CurIndex]->getNumberValue();}
+        long long getCurNumVal(){return Tokens[CurIndex]->getNumberValue();}
 
         //現在のインデックスを取得
         int getCurIndex(){return CurIndex;}

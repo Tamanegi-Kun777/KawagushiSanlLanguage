@@ -70,7 +70,7 @@ private:
   llvm::Value *generateCallExpression(CallExprAST *call_expr);
   llvm::Value *generateJumpStatement(JumpStmtAST *jump_stmt);
   llvm::Value *generateVariable(VariableAST *var);
-  llvm::Value *generateNumber(int value);
+  llvm::Value *generateNumber(long long value);
   llvm::Value *generateFloatNumber(double value);
   llvm::Value *generateStringAssign(BinaryExprAST *bin_expr);
   llvm::Value *generateEnumValueAssign(BinaryExprAST *bin_expr);

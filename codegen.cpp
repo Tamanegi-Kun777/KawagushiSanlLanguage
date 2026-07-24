@@ -1123,7 +1123,7 @@ llvm::Value *CodeGen::generateMethodCall(MemberAccessAST *member){
   args.push_back(this_ptr);
   return Builder->CreateCall(method, args, "method_call");
 }
-llvm::Value *CodeGen::generateNumber(int value){
+llvm::Value *CodeGen::generateNumber(long long value){
   return llvm::ConstantInt::get(llvm::Type::getInt32Ty(Context), value);
 }
 llvm::Value *CodeGen::generateFloatNumber(double value){
