@@ -38,11 +38,11 @@ TokenStream *LexicalAnalysis(std::string input_filename){
       else if(isspace(next_char)){
         continue;
       }
-      // IDENTIFIRE
-      else if(isalpha(next_char)){
+      // 修正後
+      else if(isalpha(next_char) || next_char == '_'){
         token_str += next_char;
-        while(index < length && isalnum(cur_line.at(index))){
-          token_str += cur_line.at(index);
+        // 修正後
+        while(index < length && (isalnum(cur_line.at(index)) || cur_line.at(index) == '_')){          token_str += cur_line.at(index);
           index++;
         }
         if(token_str == "int"){

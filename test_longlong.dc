@@ -1,0 +1,36 @@
+long f1(){
+  long x;
+  x = 3000000000;
+  return x;
+}
+
+long f2(){
+  long x;
+  x = 9223372036854775000;
+  return x;
+}
+
+long f3(){
+  long x;
+  x = 100;
+  return x;
+}
+
+int main(){
+  long y1;
+  long y2;
+  long y3;
+  y1 = f1();
+  y2 = f2();
+  y3 = f3();
+  if(y1 != 3000000000){
+    return 1;
+  }
+  if(y2 != 9223372036854775000){
+    return 2;
+  }
+  if(y3 != 100){
+    return 3;
+  }
+  return 0;
+}

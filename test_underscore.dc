@@ -1,0 +1,30 @@
+int add_int(int a, int b){
+  return a + b;
+}
+
+long add_long(long a, long b){
+  return a + b;
+}
+
+int main(){
+  int my_var;
+  int _tmp;
+  int result_1;
+
+  my_var = 5;
+  result_1 = add_int(my_var, 10);
+  if(result_1 == 15){
+  }
+  else{
+    return 1;
+  }
+
+  _tmp = add_int(1, 2);
+  if(_tmp == 3){
+  }
+  else{
+    return 2;
+  }
+
+  return 0;
+}
