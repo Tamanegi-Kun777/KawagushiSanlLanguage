@@ -1192,7 +1192,7 @@ MemberArrayAccessAST *marr = new MemberArrayAccessAST(var_name, member_name, ind
     return new MemberAccessAST("this", member_name);
   }
   else if(Tokens->getCurType() == TOK_DIGIT){
-    int val = Tokens->getCurNumVal();
+    long long val = Tokens->getCurNumVal();
     Tokens->getNextToken();
     return new NumberAST(val);
   }

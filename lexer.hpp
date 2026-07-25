@@ -41,13 +41,13 @@ class Token
 private:
   TokenType Type;
   std::string TokenString;
-  int Number;
+  long long Number;
   int Line;
 
 public:
   Token(std::string string, TokenType type, int line) : TokenString(string), Type(type), Line(line){
     if(Type == TOK_DIGIT){
-      Number = atoi(string.c_str());
+      Number = atoll(string.c_str());
     }
     else{
       Number = 0x7fffffff;
@@ -60,7 +60,10 @@ public:
 
   std::string getTokenString(){return TokenString;};
 
-  int getNumberValue(){return Number;};
+// 63行目
+  long long getNumberValue(){return Number;};
+
+
 
   int getLine(){return Line;};
 };
@@ -88,15 +91,13 @@ public:
   std::string getFurthestString(){return FurthestString;};
   int getCurLine(){return Tokens[CurIndex]->getLine();};
   Token getToken();
-
-  TokenType getCurType(){return Tokens[CurIndex]->getTokenType();};
+  // 96行目
 
   std::string getCurString(){return Tokens[CurIndex]->getTokenString();};
-
-  int getCurNumVal(){return Tokens[CurIndex]->getNumberValue();};
+  long long getCurNumVal(){return Tokens[CurIndex]->getNumberValue();};
 
   int getCurIndex(){return CurIndex;};
-
+  TokenType getCurType(){return Tokens[CurIndex]->getTokenType();};
   bool applyTokenIndex(int index){
     if(CurIndex > FurthestIndex){
       FurthestIndex = CurIndex;

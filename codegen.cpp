@@ -1,3 +1,4 @@
+#include <cstdint>
 #include "codegen.hpp"
 
 CodeGen::CodeGen(){
@@ -1124,7 +1125,10 @@ llvm::Value *CodeGen::generateMethodCall(MemberAccessAST *member){
   return Builder->CreateCall(method, args, "method_call");
 }
 llvm::Value *CodeGen::generateNumber(long long value){
-  return llvm::ConstantInt::get(llvm::Type::getInt32Ty(Context), value);
+  if(value >= INT32_MIN && value <= INT32_MAX){
+    return llvm::ConstantInt::get(llvm::Type::getInt32Ty(Context), value);
+  }
+  return llvm::ConstantInt::get(llvm::Type::getInt64Ty(Context), value);
 }
 llvm::Value *CodeGen::generateFloatNumber(double value){
   return llvm::ConstantFP::get(llvm::Type::getDoubleTy(Context), value);
